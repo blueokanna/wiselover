@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\RustProject\wiselover\build\windows\x64\CMakeFiles\a34e7fbbeca102fe52421f74fcc80fea\wise_lover_core.dll.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\RustProject\wiselover\build\windows\x64\CMakeFiles\1779cd764d88816ba4bf6b0dbac9f4c5\rust_lib_wiselover_cargokit.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\RustProject\wiselover\windows\flutter\ephemeral\.plugin_symlinks\rust_lib_wiselover\windows\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\RustProject\wiselover\build\windows\x64\plugins\rust_lib_wiselover\CMakeFiles\rust_lib_wiselover_cargokit" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{6ACE5FFB-9725-3075-B634-DA6EDA4B1FF0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

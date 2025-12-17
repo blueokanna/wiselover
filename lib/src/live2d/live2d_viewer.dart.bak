@@ -1,0 +1,444 @@
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:wiselover/src/rust/api/live2d_model_api.dart';
+import 'package:wiselover/src/live2d/live2d_model_manager.dart';
+
+/// Live2D 模型查看器 Widget
+class Live2DViewer extends StatefulWidget {
+  final bool wireframe;
+  const Live2DViewer({super.key, this.wireframe = false});
+
+  @override
+  State<Live2DViewer> createState() => _Live2DViewerState();
+}
+
+class _Live2DViewerState extends State<Live2DViewer> {
+  bool _isLoading = true;
+  String? _error;
+  Timer? _updateTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // 监听模型管理器更新
+    Live2DModelManager.instance.addListener(_onModelUpdate);
+    _loadModel();
+  }
+
+  @override
+  void dispose() {
+    _updateTimer?.cancel();
+    Live2DModelManager.instance.removeListener(_onModelUpdate);
+    super.dispose();
+  }
+
+  void _onModelUpdate() {
+    if (mounted) {
+      // 当模型更新时触发重绘
+      setState(() {});
+    }
+  }
+
+  Future<void> _loadModel() async {
+    try {
+      await Live2DModelManager.instance.loadModel();
+
+      if (!Live2DModelManager.instance.isLoaded) {
+        throw Exception('Model loaded but isLoaded returns false');
+      }
+
+      // 启动定时器更新帧（60 FPS）并添加简单动画
+      var animationTime = 0.0;
+      _updateTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+        if (mounted && Live2DModelManager.instance.isLoaded) {
+          // 添加简单的呼吸动画
+          animationTime += 0.016; // 约 60 FPS
+          final breath =
+              (math.sin(animationTime * 2.0) * 0.5 + 0.5) * 0.3; // 0 到 0.3
+
+          // 设置呼吸参数（如果模型有这个参数）
+          try {
+            Live2DModelManager.instance.setParameter('PARAM_BREATH', breath);
+          } catch (e) {
+            // 参数可能不存在，忽略错误
+          }
+
+          // 更新模型并触发重绘
+          Live2DModelManager.instance.update();
+          if (mounted) {
+            setState(() {}); // 触发重绘
+          }
+        } else {
+          timer.cancel();
+        }
+      });
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (kDebugMode) {
+        debugPrint('✓ Live2DViewer: Model loaded and viewer initialized');
+        final frame = Live2DModelManager.instance.currentFrame;
+        if (frame != null) {
+          debugPrint('  Current frame: ${frame.drawables.length} drawables');
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error loading model in Live2DViewer: $e');
+      debugPrint('Stack trace: $stackTrace');
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text('加载模型失败: $_error'),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: _loadModel, child: const Text('重试')),
+          ],
+        ),
+      );
+    }
+
+    if (!Live2DModelManager.instance.isLoaded) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('模型加载中...'),
+          ],
+        ),
+      );
+    }
+
+    final currentFrame = Live2DModelManager.instance.currentFrame;
+    final textures = Live2DModelManager.instance.textures;
+
+    if (kDebugMode && currentFrame == null) {
+      debugPrint('⚠ Live2DViewer: Model is loaded but currentFrame is null');
+    }
+
+    return RepaintBoundary(
+      child: SizedBox.expand(
+        child: CustomPaint(
+          painter: _Live2DPainter(
+            textures: textures,
+            frame: currentFrame,
+            wireframe: widget.wireframe,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Live2DPainter extends CustomPainter {
+  final List<ui.Image> textures;
+  final FrameDto? frame;
+  final bool wireframe;
+
+  _Live2DPainter({
+    required this.textures,
+    required this.frame,
+    this.wireframe = false,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final f = frame;
+    if (f == null || f.drawables.isEmpty || textures.isEmpty) {
+      final paint = Paint()..color = const Color(0xFFF5F5F5);
+      canvas.drawRect(Offset.zero & size, paint);
+      return;
+    }
+
+    // 绘制背景
+    final bgPaint = Paint()..color = const Color(0xFFF5F5F5);
+    canvas.drawRect(Offset.zero & size, bgPaint);
+
+    // Live2D 坐标系：原点在中心，Y轴向上
+    // Flutter 坐标系：原点在左上角，Y轴向下
+    final cw = f.canvasWidth > 0 ? f.canvasWidth : 2.0;
+    final ch = f.canvasHeight > 0 ? f.canvasHeight : 2.0;
+
+    // 计算缩放比例 - 使用canvas尺寸
+    final sx = size.width / cw;
+    final sy = size.height / ch;
+    final scale = (sx < sy ? sx : sy) * 0.8; // 留出边距
+
+    // 坐标转换：Live2D标准中心坐标系
+    canvas.save();
+    final centerX = size.width / 2;
+    final centerY = size.height / 2;
+    
+    // 移动到屏幕中心，缩放，翻转Y轴
+    canvas.translate(centerX, centerY);
+    canvas.scale(scale, -scale);
+
+    // 按 drawOrder 排序
+    final sorted = List<DrawableFrameDto>.from(f.drawables)
+      ..sort((a, b) => a.drawOrder.compareTo(b.drawOrder));
+
+    int drawnCount = 0;
+
+    // 绘制所有 drawable
+    for (final d in sorted) {
+      // 基本验证 - 跳过不可见或无效的drawable
+      if (d.opacity <= 0.001) continue; // 跳过透明的
+      if (d.vertices.length < 4) continue; // 至少需要2个顶点（4个float）
+      if (d.indices.length < 3) continue; // 至少需要1个三角形
+      if (d.textureIndex < 0 || d.textureIndex >= textures.length) continue;
+
+      final image = textures[d.textureIndex];
+      if (image.width == 0 || image.height == 0) continue;
+
+      // 准备顶点坐标
+      final positions = <ui.Offset>[];
+      for (var i = 0; i + 1 < d.vertices.length; i += 2) {
+        positions.add(Offset(d.vertices[i], d.vertices[i + 1]));
+      }
+
+      if (positions.isEmpty) continue;
+
+      // 准备纹理坐标（归一化坐标 0-1）
+      final texCoords = <ui.Offset>[];
+      for (var i = 0; i < d.uvs.length - 1; i += 2) {
+        texCoords.add(Offset(
+          d.uvs[i].clamp(0.0, 1.0),
+          d.uvs[i + 1].clamp(0.0, 1.0),
+        ));
+      }
+
+      // 如果UV数量不足，填充默认值
+      while (texCoords.length < positions.length) {
+        texCoords.add(texCoords.isNotEmpty ? texCoords.first : Offset.zero);
+      }
+
+      // 验证并过滤索引
+      final validIndices = <int>[];
+      for (var idx in d.indices) {
+        if (idx >= 0 && idx < positions.length) {
+          validIndices.add(idx);
+        }
+      }
+
+      // 确保索引数量是3的倍数
+      final triangleCount = validIndices.length ~/ 3;
+      if (triangleCount == 0) continue;
+      
+      final indexList = Uint16List.fromList(validIndices.sublist(0, triangleCount * 3));
+
+      // 创建顶点数据
+      final positionList = Float32List.fromList(
+        positions.expand((e) => [e.dx, e.dy]).toList(),
+      );
+      final texCoordList = Float32List.fromList(
+        texCoords.expand((e) => [e.dx, e.dy]).toList(),
+      );
+      final indexList = Uint16List.fromList(validIndices);
+
+      // 创建 ImageShader
+      ui.ImageShader? shader;
+      try {
+        shader = ui.ImageShader(
+          image,
+          TileMode.clamp,
+          TileMode.clamp,
+          Float64List.fromList([
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+          ]),
+        );
+      } catch (e, stackTrace) {
+        skippedTexture++;
+        if (kDebugMode && skippedTexture <= 5) {
+          debugPrint('❌ Failed to create ImageShader: $e');
+          debugPrint('  Texture: ${image.width}x${image.height}');
+          debugPrint('  Stack trace: $stackTrace');
+        }
+        continue;
+      }
+
+      // 创建顶点对象
+      final vertices = ui.Vertices.raw(
+        ui.VertexMode.triangles,
+        positionList,
+        textureCoordinates: texCoordList,
+        indices: indexList,
+      );
+
+      // 处理 multiply color
+      final multiply = d.multiplyColor;
+      ColorFilter? colorFilter;
+      if (multiply.length >= 4) {
+        final r = multiply[0].clamp(0.0, 1.0);
+        final g = multiply[1].clamp(0.0, 1.0);
+        final b = multiply[2].clamp(0.0, 1.0);
+        final a = multiply[3].clamp(0.0, 1.0);
+
+        if ((r - 1.0).abs() > 0.001 ||
+            (g - 1.0).abs() > 0.001 ||
+            (b - 1.0).abs() > 0.001 ||
+            (a - 1.0).abs() > 0.001) {
+          colorFilter = ColorFilter.matrix([
+            r,
+            0,
+            0,
+            0,
+            0,
+            0,
+            g,
+            0,
+            0,
+            0,
+            0,
+            0,
+            b,
+            0,
+            0,
+            0,
+            0,
+            0,
+            a,
+            0,
+          ]);
+        }
+      }
+
+      // 创建 Paint
+      // 确保opacity至少为0.01，这样即使很小的opacity也能看到
+      final opacity = d.opacity.clamp(0.01, 1.0);
+      final alphaValue = (opacity * 255).round().clamp(1, 255);
+
+      final paint = Paint()
+        ..filterQuality = FilterQuality.high
+        ..shader = shader
+        ..color = Color.fromARGB(alphaValue, 255, 255, 255)
+        ..blendMode = BlendMode.srcOver
+        ..isAntiAlias = true;
+
+      if (colorFilter != null) {
+        paint.colorFilter = colorFilter;
+      }
+
+      // 绘制
+      try {
+        // 确保shader不为null
+        if (paint.shader == null) {
+          if (kDebugMode && drawnCount < 10) {
+            debugPrint(
+              '⚠ Skipped drawable $processedCount: paint.shader is null',
+            );
+          }
+          continue;
+        }
+
+        // 绘制顶点
+        canvas.drawVertices(vertices, BlendMode.srcOver, paint);
+        drawnCount++;
+
+        if (kDebugMode) {
+          if (drawnCount <= 10) {
+            debugPrint(
+              '✓ Drawn drawable $drawnCount: ${positions.length} vertices, '
+              '${validIndices.length ~/ 3} triangles, opacity=${opacity.toStringAsFixed(3)}, '
+              'texture=${image.width}x${image.height}',
+            );
+            // 输出第一个顶点的坐标用于调试
+            if (positions.isNotEmpty) {
+              debugPrint(
+                '  First vertex (original): (${d.vertices[0].toStringAsFixed(2)}, ${d.vertices[1].toStringAsFixed(2)})',
+              );
+              debugPrint(
+                '  First vertex (transformed): (${positions[0].dx.toStringAsFixed(2)}, ${positions[0].dy.toStringAsFixed(2)})',
+              );
+            }
+          }
+          // 每绘制10个drawable输出一次进度
+          if (drawnCount % 10 == 0) {
+            debugPrint(
+              '  Progress: $drawnCount/${sorted.length} drawables drawn',
+            );
+          }
+        }
+      } catch (e, stackTrace) {
+        if (kDebugMode && drawnCount < 10) {
+          debugPrint('❌ Error drawing drawable $drawnCount: $e');
+          debugPrint('  Stack trace: $stackTrace');
+          debugPrint(
+            '  Details: vertices=${positions.length}, indices=${validIndices.length}, '
+            'texture=${image.width}x${image.height}, shader=${paint.shader != null}',
+          );
+        }
+      }
+    }
+
+    canvas.restore();
+
+    if (kDebugMode) {
+      debugPrint(
+        '📊 Render summary: ${drawnCount}/${f.drawables.length} drawables drawn',
+      );
+      debugPrint(
+        '   Skipped: opacity=$skippedOpacity, vertices=$skippedVertices, '
+        'indices=$skippedIndices, texture=$skippedTexture, invalidIndices=$skippedInvalidIndices',
+      );
+      if (drawnCount == 0) {
+        debugPrint('❌ No drawables were drawn!');
+        debugPrint(
+          '   This means all drawables were skipped. Check the skip reasons above.',
+        );
+      } else {
+        debugPrint('✓ Successfully drew $drawnCount drawables');
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _Live2DPainter oldDelegate) {
+    if (oldDelegate.frame != frame) return true;
+    if (oldDelegate.textures.length != textures.length) return true;
+    for (int i = 0; i < textures.length; i++) {
+      if (i >= oldDelegate.textures.length ||
+          textures[i] != oldDelegate.textures[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+}

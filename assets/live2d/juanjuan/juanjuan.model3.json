@@ -1,0 +1,28 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "juanjuan.moc3",
+		"Textures": [
+			"juanjuan.8192/texture_00.png",
+			"juanjuan.8192/texture_01.png",
+			"juanjuan.8192/texture_02.png"
+		],
+		"Physics": "juanjuan.physics3.json",
+		"DisplayInfo": "juanjuan.cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": [
+				"ParamEyeLOpen",
+				"ParamEyeROpen"
+			]
+		},
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		}
+	]
+}

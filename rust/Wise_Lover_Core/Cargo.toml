@@ -1,0 +1,25 @@
+[package]
+name = "wise_lover_core"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+include = [
+    "src/**/*.rs",
+    "src/**/*.s",
+    "src/**/*.r",
+    "proto/**/*.proto",
+    "benches/**/*.rs",
+    "build.rs",
+    "Cargo.toml",
+    "Cargo.lock",
+]
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
+
+[dependencies]
+flutter_rust_bridge = "=2.11.1"
+live2d_core = { path = "../Live2d_Core", package = "live2d_core" }

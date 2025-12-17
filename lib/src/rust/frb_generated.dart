@@ -3,12 +3,14 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
-import 'api/simple.dart';
+import 'api/live2d_model_api.dart';
+import 'api/wise_lover_boot_api.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
+import 'lib.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Main entrypoint of the Rust API
@@ -55,7 +57,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 
   @override
   Future<void> executeRustInitializers() async {
-    await api.crateApiSimpleInitApp();
+    await api.crateApiWiseLoverBootApiWiseLoverBootInitApp();
   }
 
   @override
@@ -66,20 +68,58 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => -1918914929;
+  int get rustContentHash => 1822512288;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
-        stem: 'rust_lib_wiselover',
-        ioDirectory: 'rust/target/release/',
+        stem: 'wise_lover_core',
+        ioDirectory: 'rust/Wise_Lover_Core/target/release/',
         webPrefix: 'pkg/',
       );
 }
 
 abstract class RustLibApi extends BaseApi {
-  String crateApiSimpleGreet({required String name});
+  bool crateApiWiseLoverBootApiLive2DCoreCheckMocConsistency({
+    required List<int> mocBytes,
+  });
 
-  Future<void> crateApiSimpleInitApp();
+  String crateApiWiseLoverBootApiLive2DCoreLatestMocVersion();
+
+  String crateApiWiseLoverBootApiLive2DCoreLoader();
+
+  String crateApiWiseLoverBootApiLive2DCoreMocVersion({
+    required List<int> mocBytes,
+  });
+
+  String crateApiWiseLoverBootApiLive2DCoreVersion();
+
+  List<String> crateApiLive2DModelApiLive2DModelGetParameterIds({
+    required BigInt handle,
+  });
+
+  List<String> crateApiLive2DModelApiLive2DModelGetPartIds({
+    required BigInt handle,
+  });
+
+  BigInt crateApiLive2DModelApiLive2DModelLoad({required List<int> mocBytes});
+
+  void crateApiLive2DModelApiLive2DModelSetParameter({
+    required BigInt handle,
+    required String parameterId,
+    required double value,
+  });
+
+  void crateApiLive2DModelApiLive2DModelSetPartOpacity({
+    required BigInt handle,
+    required String partId,
+    required double opacity,
+  });
+
+  FrameDto crateApiLive2DModelApiLive2DModelStep({required BigInt handle});
+
+  void crateApiLive2DModelApiLive2DModelUnload({required BigInt handle});
+
+  Future<void> crateApiWiseLoverBootApiWiseLoverBootInitApp();
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -91,30 +131,331 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
-  String crateApiSimpleGreet({required String name}) {
+  bool crateApiWiseLoverBootApiLive2DCoreCheckMocConsistency({
+    required List<int> mocBytes,
+  }) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(name, serializer);
+          sse_encode_list_prim_u_8_loose(mocBytes, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
+          decodeSuccessData: sse_decode_bool,
           decodeErrorData: null,
         ),
-        constMeta: kCrateApiSimpleGreetConstMeta,
-        argValues: [name],
+        constMeta:
+            kCrateApiWiseLoverBootApiLive2DCoreCheckMocConsistencyConstMeta,
+        argValues: [mocBytes],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiSimpleGreetConstMeta =>
-      const TaskConstMeta(debugName: "greet", argNames: ["name"]);
+  TaskConstMeta
+  get kCrateApiWiseLoverBootApiLive2DCoreCheckMocConsistencyConstMeta =>
+      const TaskConstMeta(
+        debugName: "live2d_core_check_moc_consistency",
+        argNames: ["mocBytes"],
+      );
 
   @override
-  Future<void> crateApiSimpleInitApp() {
+  String crateApiWiseLoverBootApiLive2DCoreLatestMocVersion() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiWiseLoverBootApiLive2DCoreLatestMocVersionConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiWiseLoverBootApiLive2DCoreLatestMocVersionConstMeta =>
+      const TaskConstMeta(
+        debugName: "live2d_core_latest_moc_version",
+        argNames: [],
+      );
+
+  @override
+  String crateApiWiseLoverBootApiLive2DCoreLoader() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiWiseLoverBootApiLive2DCoreLoaderConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWiseLoverBootApiLive2DCoreLoaderConstMeta =>
+      const TaskConstMeta(debugName: "live2d_core_loader", argNames: []);
+
+  @override
+  String crateApiWiseLoverBootApiLive2DCoreMocVersion({
+    required List<int> mocBytes,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(mocBytes, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWiseLoverBootApiLive2DCoreMocVersionConstMeta,
+        argValues: [mocBytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWiseLoverBootApiLive2DCoreMocVersionConstMeta =>
+      const TaskConstMeta(
+        debugName: "live2d_core_moc_version",
+        argNames: ["mocBytes"],
+      );
+
+  @override
+  String crateApiWiseLoverBootApiLive2DCoreVersion() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiWiseLoverBootApiLive2DCoreVersionConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWiseLoverBootApiLive2DCoreVersionConstMeta =>
+      const TaskConstMeta(debugName: "live2d_core_version", argNames: []);
+
+  @override
+  List<String> crateApiLive2DModelApiLive2DModelGetParameterIds({
+    required BigInt handle,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_64(handle, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiLive2DModelApiLive2DModelGetParameterIdsConstMeta,
+        argValues: [handle],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiLive2DModelApiLive2DModelGetParameterIdsConstMeta =>
+      const TaskConstMeta(
+        debugName: "live2d_model_get_parameter_ids",
+        argNames: ["handle"],
+      );
+
+  @override
+  List<String> crateApiLive2DModelApiLive2DModelGetPartIds({
+    required BigInt handle,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_64(handle, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiLive2DModelApiLive2DModelGetPartIdsConstMeta,
+        argValues: [handle],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLive2DModelApiLive2DModelGetPartIdsConstMeta =>
+      const TaskConstMeta(
+        debugName: "live2d_model_get_part_ids",
+        argNames: ["handle"],
+      );
+
+  @override
+  BigInt crateApiLive2DModelApiLive2DModelLoad({required List<int> mocBytes}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(mocBytes, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_u_64,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiLive2DModelApiLive2DModelLoadConstMeta,
+        argValues: [mocBytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLive2DModelApiLive2DModelLoadConstMeta =>
+      const TaskConstMeta(
+        debugName: "live2d_model_load",
+        argNames: ["mocBytes"],
+      );
+
+  @override
+  void crateApiLive2DModelApiLive2DModelSetParameter({
+    required BigInt handle,
+    required String parameterId,
+    required double value,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_64(handle, serializer);
+          sse_encode_String(parameterId, serializer);
+          sse_encode_f_32(value, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiLive2DModelApiLive2DModelSetParameterConstMeta,
+        argValues: [handle, parameterId, value],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLive2DModelApiLive2DModelSetParameterConstMeta =>
+      const TaskConstMeta(
+        debugName: "live2d_model_set_parameter",
+        argNames: ["handle", "parameterId", "value"],
+      );
+
+  @override
+  void crateApiLive2DModelApiLive2DModelSetPartOpacity({
+    required BigInt handle,
+    required String partId,
+    required double opacity,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_64(handle, serializer);
+          sse_encode_String(partId, serializer);
+          sse_encode_f_32(opacity, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiLive2DModelApiLive2DModelSetPartOpacityConstMeta,
+        argValues: [handle, partId, opacity],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLive2DModelApiLive2DModelSetPartOpacityConstMeta =>
+      const TaskConstMeta(
+        debugName: "live2d_model_set_part_opacity",
+        argNames: ["handle", "partId", "opacity"],
+      );
+
+  @override
+  FrameDto crateApiLive2DModelApiLive2DModelStep({required BigInt handle}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_64(handle, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 11)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_frame_dto,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiLive2DModelApiLive2DModelStepConstMeta,
+        argValues: [handle],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLive2DModelApiLive2DModelStepConstMeta =>
+      const TaskConstMeta(debugName: "live2d_model_step", argNames: ["handle"]);
+
+  @override
+  void crateApiLive2DModelApiLive2DModelUnload({required BigInt handle}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_64(handle, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiLive2DModelApiLive2DModelUnloadConstMeta,
+        argValues: [handle],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLive2DModelApiLive2DModelUnloadConstMeta =>
+      const TaskConstMeta(
+        debugName: "live2d_model_unload",
+        argNames: ["handle"],
+      );
+
+  @override
+  Future<void> crateApiWiseLoverBootApiWiseLoverBootInitApp() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -122,7 +463,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 13,
             port: port_,
           );
         },
@@ -130,15 +471,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
         ),
-        constMeta: kCrateApiSimpleInitAppConstMeta,
+        constMeta: kCrateApiWiseLoverBootApiWiseLoverBootInitAppConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiSimpleInitAppConstMeta =>
-      const TaskConstMeta(debugName: "init_app", argNames: []);
+  TaskConstMeta get kCrateApiWiseLoverBootApiWiseLoverBootInitAppConstMeta =>
+      const TaskConstMeta(debugName: "wise_lover_boot_init_app", argNames: []);
 
   @protected
   String dco_decode_String(dynamic raw) {
@@ -147,9 +488,112 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  bool dco_decode_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as bool;
+  }
+
+  @protected
+  DrawableFrameDto dco_decode_drawable_frame_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return DrawableFrameDto(
+      textureIndex: dco_decode_u_32(arr[0]),
+      vertices: dco_decode_list_prim_f_32_strict(arr[1]),
+      uvs: dco_decode_list_prim_f_32_strict(arr[2]),
+      indices: dco_decode_list_prim_u_16_strict(arr[3]),
+      opacity: dco_decode_f_32(arr[4]),
+      multiplyColor: dco_decode_f_32_array_4(arr[5]),
+      screenColor: dco_decode_f_32_array_4(arr[6]),
+      drawOrder: dco_decode_i_32(arr[7]),
+    );
+  }
+
+  @protected
+  double dco_decode_f_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
+  F32Array4 dco_decode_f_32_array_4(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return F32Array4(dco_decode_list_prim_f_32_strict(raw));
+  }
+
+  @protected
+  FrameDto dco_decode_frame_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return FrameDto(
+      canvasWidth: dco_decode_f_32(arr[0]),
+      canvasHeight: dco_decode_f_32(arr[1]),
+      drawables: dco_decode_list_drawable_frame_dto(arr[2]),
+    );
+  }
+
+  @protected
+  int dco_decode_i_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
+  List<String> dco_decode_list_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_String).toList();
+  }
+
+  @protected
+  List<DrawableFrameDto> dco_decode_list_drawable_frame_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_drawable_frame_dto).toList();
+  }
+
+  @protected
+  Float32List dco_decode_list_prim_f_32_strict(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as Float32List;
+  }
+
+  @protected
+  Uint16List dco_decode_list_prim_u_16_strict(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as Uint16List;
+  }
+
+  @protected
+  List<int> dco_decode_list_prim_u_8_loose(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as List<int>;
+  }
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
+  }
+
+  @protected
+  int dco_decode_u_16(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
+  int dco_decode_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
+  BigInt dco_decode_u_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeU64(raw);
   }
 
   @protected
@@ -172,10 +616,136 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  bool sse_decode_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint8() != 0;
+  }
+
+  @protected
+  DrawableFrameDto sse_decode_drawable_frame_dto(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_textureIndex = sse_decode_u_32(deserializer);
+    var var_vertices = sse_decode_list_prim_f_32_strict(deserializer);
+    var var_uvs = sse_decode_list_prim_f_32_strict(deserializer);
+    var var_indices = sse_decode_list_prim_u_16_strict(deserializer);
+    var var_opacity = sse_decode_f_32(deserializer);
+    var var_multiplyColor = sse_decode_f_32_array_4(deserializer);
+    var var_screenColor = sse_decode_f_32_array_4(deserializer);
+    var var_drawOrder = sse_decode_i_32(deserializer);
+    return DrawableFrameDto(
+      textureIndex: var_textureIndex,
+      vertices: var_vertices,
+      uvs: var_uvs,
+      indices: var_indices,
+      opacity: var_opacity,
+      multiplyColor: var_multiplyColor,
+      screenColor: var_screenColor,
+      drawOrder: var_drawOrder,
+    );
+  }
+
+  @protected
+  double sse_decode_f_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getFloat32();
+  }
+
+  @protected
+  F32Array4 sse_decode_f_32_array_4(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_list_prim_f_32_strict(deserializer);
+    return F32Array4(inner);
+  }
+
+  @protected
+  FrameDto sse_decode_frame_dto(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_canvasWidth = sse_decode_f_32(deserializer);
+    var var_canvasHeight = sse_decode_f_32(deserializer);
+    var var_drawables = sse_decode_list_drawable_frame_dto(deserializer);
+    return FrameDto(
+      canvasWidth: var_canvasWidth,
+      canvasHeight: var_canvasHeight,
+      drawables: var_drawables,
+    );
+  }
+
+  @protected
+  int sse_decode_i_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getInt32();
+  }
+
+  @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <String>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_String(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<DrawableFrameDto> sse_decode_list_drawable_frame_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <DrawableFrameDto>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_drawable_frame_dto(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  Float32List sse_decode_list_prim_f_32_strict(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var len_ = sse_decode_i_32(deserializer);
+    return deserializer.buffer.getFloat32List(len_);
+  }
+
+  @protected
+  Uint16List sse_decode_list_prim_u_16_strict(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var len_ = sse_decode_i_32(deserializer);
+    return deserializer.buffer.getUint16List(len_);
+  }
+
+  @protected
+  List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var len_ = sse_decode_i_32(deserializer);
+    return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  int sse_decode_u_16(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint16();
+  }
+
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint32();
+  }
+
+  @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getBigUint64();
   }
 
   @protected
@@ -190,21 +760,110 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  int sse_decode_i_32(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getInt32();
-  }
-
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint8() != 0;
-  }
-
-  @protected
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
+  }
+
+  @protected
+  void sse_encode_bool(bool self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint8(self ? 1 : 0);
+  }
+
+  @protected
+  void sse_encode_drawable_frame_dto(
+    DrawableFrameDto self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self.textureIndex, serializer);
+    sse_encode_list_prim_f_32_strict(self.vertices, serializer);
+    sse_encode_list_prim_f_32_strict(self.uvs, serializer);
+    sse_encode_list_prim_u_16_strict(self.indices, serializer);
+    sse_encode_f_32(self.opacity, serializer);
+    sse_encode_f_32_array_4(self.multiplyColor, serializer);
+    sse_encode_f_32_array_4(self.screenColor, serializer);
+    sse_encode_i_32(self.drawOrder, serializer);
+  }
+
+  @protected
+  void sse_encode_f_32(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putFloat32(self);
+  }
+
+  @protected
+  void sse_encode_f_32_array_4(F32Array4 self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_prim_f_32_strict(self.inner, serializer);
+  }
+
+  @protected
+  void sse_encode_frame_dto(FrameDto self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_f_32(self.canvasWidth, serializer);
+    sse_encode_f_32(self.canvasHeight, serializer);
+    sse_encode_list_drawable_frame_dto(self.drawables, serializer);
+  }
+
+  @protected
+  void sse_encode_i_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putInt32(self);
+  }
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_String(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_drawable_frame_dto(
+    List<DrawableFrameDto> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_drawable_frame_dto(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_prim_f_32_strict(
+    Float32List self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    serializer.buffer.putFloat32List(self);
+  }
+
+  @protected
+  void sse_encode_list_prim_u_16_strict(
+    Uint16List self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    serializer.buffer.putUint16List(self);
+  }
+
+  @protected
+  void sse_encode_list_prim_u_8_loose(
+    List<int> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    serializer.buffer.putUint8List(
+      self is Uint8List ? self : Uint8List.fromList(self),
+    );
   }
 
   @protected
@@ -218,6 +877,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_u_16(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint16(self);
+  }
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint32(self);
+  }
+
+  @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putBigUint64(self);
+  }
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self);
@@ -226,17 +903,5 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   void sse_encode_unit(void self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-  }
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putInt32(self);
-  }
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint8(self ? 1 : 0);
   }
 }
