@@ -33,6 +33,8 @@ fn next_handle() -> u64 {
 /// Dart 侧使用的单个 Drawable 帧数据
 #[derive(Debug, Clone)]
 pub struct DrawableFrameDto {
+    /// 对应原始 drawable 的索引（用于遮罩查找）
+    pub index: u32,
     pub texture_index: u32,
     /// 展平后的顶点坐标数组：[x0, y0, x1, y1, ...]
     pub vertices: Vec<f32>,
@@ -40,6 +42,8 @@ pub struct DrawableFrameDto {
     pub uvs: Vec<f32>,
     /// 索引缓冲，指向 `vertices` / `uvs` 中的顶点下标
     pub indices: Vec<u16>,
+    /// 遮罩列表，元素为 drawable 索引
+    pub masks: Vec<u16>,
     pub opacity: f32,
     /// 乘色
     pub multiply_color: [f32; 4],
@@ -203,10 +207,16 @@ pub fn live2d_model_step(handle: u64) -> Result<FrameDto, String> {
         let screen = screen_colors[drawable_i];
 
         let frame = DrawableFrameDto {
+            index: drawable.index().as_usize() as u32,
             texture_index: drawable.texture_index().as_usize() as u32,
             vertices,
             uvs,
             indices: triangles.to_vec(),
+            masks: drawable
+                .masks()
+                .iter()
+                .map(|&m| m as u16)
+                .collect(),
             opacity: opacities[drawable_i],
             multiply_color: vec4_to_f32(&multiply),
             screen_color: vec4_to_f32(&screen),

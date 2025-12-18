@@ -1,4 +1,3 @@
-
 pub mod platform_iface;
 
 #[cfg(not(target_arch = "wasm32"))]

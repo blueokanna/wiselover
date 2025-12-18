@@ -103,7 +103,7 @@ class _Live2DViewerState extends State<Live2DViewer> {
           _currentX += (_targetX - _currentX) * 0.1;
           _currentY += (_targetY - _currentY) * 0.1;
 
-          // --- 2. 心理学微动作 (Psychological Micro-movements) ---
+          // --- 2. 微动作 (Micro-movements) ---
 
           // Saccades (眼球快速扫视): 模拟人类不自觉的眼球运动
           _saccadeTimer += 0.016;
@@ -433,29 +433,29 @@ class _Live2DPainter extends CustomPainter {
     canvas.scale(scale, -scale);
     canvas.translate(-centerModelX, -centerModelY);
 
+    // 建立索引映射，便于查找遮罩所引用的 drawable
+    final drawableMap = <int, DrawableFrameDto>{
+      for (final d in f.drawables) d.index: d,
+    };
+
     final sorted = List<DrawableFrameDto>.from(f.drawables)
       ..sort((a, b) => a.drawOrder.compareTo(b.drawOrder));
 
     for (final d in sorted) {
-      // 1. 跳过完全透明的部件
       if (d.opacity <= 0.001) continue;
 
-      // 2. 基础数据校验
       if (d.vertices.length < 4 || d.indices.length < 3) {
         continue;
       }
 
-      // 3. 纹理索引校验
       if (d.textureIndex < 0 || d.textureIndex >= textures.length) {
         continue;
       }
 
       final image = textures[d.textureIndex];
 
-      // 4. 获取或创建 Shader
       ui.ImageShader? shader = shaderCache[image];
       if (shader == null) {
-        // 使用标准 Shader，手动处理 UV 坐标
         shader = ui.ImageShader(
           image,
           TileMode.clamp,
@@ -489,6 +489,7 @@ class _Live2DPainter extends CustomPainter {
       final h = image.height.toDouble();
       final texCoords = Float32List(d.uvs.length);
 
+      // Live2D UV: (0,0) 左上；由于画布 Y 轴被翻转，需要翻转 V 以保持纹理方向正确
       for (int i = 0; i < d.uvs.length; i += 2) {
         texCoords[i] = d.uvs[i] * w;
         texCoords[i + 1] = (1.0 - d.uvs[i + 1]) * h;
@@ -502,26 +503,171 @@ class _Live2DPainter extends CustomPainter {
           indices: d.indices,
         );
 
-        final paint = Paint()
+        // Live2D 标准混合：Multiply + Screen
+        final opacity = d.opacity.clamp(0.0, 1.0);
+        final alpha = (opacity * 255).clamp(0, 255).toInt();
+
+        // Multiply color: 转换为 0-255 范围
+        final mulR = (d.multiplyColor[0] * 255).clamp(0, 255).toInt();
+        final mulG = (d.multiplyColor[1] * 255).clamp(0, 255).toInt();
+        final mulB = (d.multiplyColor[2] * 255).clamp(0, 255).toInt();
+
+        // Screen color: 转换为 0-255 范围
+        final screenR = (d.screenColor[0] * 255).clamp(0, 255).toInt();
+        final screenG = (d.screenColor[1] * 255).clamp(0, 255).toInt();
+        final screenB = (d.screenColor[2] * 255).clamp(0, 255).toInt();
+        final screenA = (d.screenColor[3] * 255).clamp(0, 255).toInt();
+
+        // 检查 multiplyColor 是否接近黑色或白色
+        final isMultiplyBlack = mulR < 3 && mulG < 3 && mulB < 3;
+        final isMultiplyWhite = mulR > 252 && mulG > 252 && mulB > 252;
+
+        // Multiply pass: 使用 modulate 混合模式
+        // 如果 multiplyColor 是黑色，跳过 multiply（直接绘制纹理）
+        // 如果 multiplyColor 是白色，也跳过 multiply（优化）
+        final paintMultiply = Paint()
+          ..shader = shader
+          ..isAntiAlias = true
+          ..filterQuality = FilterQuality.high; // 提高过滤质量
+
+        if (isMultiplyBlack || isMultiplyWhite) {
+          // 跳过 multiply，直接使用 srcOver 绘制纹理
+          paintMultiply
+            ..blendMode = BlendMode.srcOver
+            ..color = Color.fromARGB(alpha, 255, 255, 255);
+        } else {
+          // 使用 modulate 应用 multiplyColor
+          paintMultiply
+            ..blendMode = BlendMode.modulate
+            ..color = Color.fromARGB(alpha, mulR, mulG, mulB);
+        }
+
+        // Screen pass: 用于高光叠加
+        final paintScreen = Paint()
           ..shader = shader
           ..isAntiAlias = true
           ..filterQuality = FilterQuality
-              .medium // 优化：使用 medium 质量以平衡性能和画质
-          ..blendMode = BlendMode.srcOver;
+              .high // 提高过滤质量
+          ..blendMode = BlendMode.screen
+          ..color = Color.fromARGB(
+            (alpha * screenA / 255).clamp(0, 255).toInt(),
+            screenR,
+            screenG,
+            screenB,
+          );
 
-        // 应用 Multiply Color 和 Opacity
-        // Live2D 的 multiplyColor 通常是 [R, G, B, A]，我们主要使用 RGB 进行乘色
-        // Opacity 控制整体透明度
-        final alpha = (d.opacity * 255).clamp(0, 255).toInt();
-        final r = (d.multiplyColor[0] * 255).clamp(0, 255).toInt();
-        final g = (d.multiplyColor[1] * 255).clamp(0, 255).toInt();
-        final b = (d.multiplyColor[2] * 255).clamp(0, 255).toInt();
+        // 构建遮罩路径（如果有遮罩）
+        Path? maskPath;
+        bool hasValidMask = false;
+        if (d.masks.isNotEmpty) {
+          maskPath = Path()..fillType = PathFillType.evenOdd;
+          for (final m in d.masks) {
+            final md = drawableMap[m];
+            if (md == null || md.vertices.length < 4 || md.indices.length < 3) {
+              continue;
+            }
+            // 确保遮罩 drawable 在当前帧已绘制（drawOrder 小于当前）
+            bool maskDrawn = false;
+            for (final other in sorted) {
+              if (other.index == m && other.drawOrder < d.drawOrder) {
+                maskDrawn = true;
+                break;
+              }
+            }
+            if (!maskDrawn) continue;
 
-        paint.color = Color.fromARGB(alpha, r, g, b);
+            int triangleCount = 0;
+            for (int i = 0; i + 2 < md.indices.length; i += 3) {
+              final i0 = md.indices[i] * 2;
+              final i1 = md.indices[i + 1] * 2;
+              final i2 = md.indices[i + 2] * 2;
+              if (i0 + 1 >= md.vertices.length ||
+                  i1 + 1 >= md.vertices.length ||
+                  i2 + 1 >= md.vertices.length) {
+                continue;
+              }
+              maskPath
+                ..moveTo(md.vertices[i0], md.vertices[i0 + 1])
+                ..lineTo(md.vertices[i1], md.vertices[i1 + 1])
+                ..lineTo(md.vertices[i2], md.vertices[i2 + 1])
+                ..close();
+              triangleCount++;
+            }
+            if (triangleCount > 0) {
+              hasValidMask = true;
+            }
+          }
+        }
 
-        // 使用 modulate 混合模式，这样 paint.color 会与纹理颜色相乘
-        // 纹理颜色 * MultiplyColor * Opacity
-        canvas.drawVertices(vertices, BlendMode.modulate, paint);
+        if (!hasValidMask || maskPath == null) {
+          // 无遮罩或遮罩无效：直接绘制
+          canvas.drawVertices(vertices, paintMultiply.blendMode, paintMultiply);
+          if (screenA > 0) {
+            canvas.drawVertices(vertices, BlendMode.screen, paintScreen);
+          }
+        } else {
+          // 有有效遮罩：使用 saveLayer + clipPath 确保正确裁剪
+          try {
+            final bounds = maskPath.getBounds();
+            if (bounds.width > 0 &&
+                bounds.height > 0 &&
+                bounds.width.isFinite &&
+                bounds.height.isFinite) {
+              // 使用更大的边界，确保内容不被过度裁剪
+              // 计算 drawable 的边界
+              double minX = double.infinity, minY = double.infinity;
+              double maxX = -double.infinity, maxY = -double.infinity;
+              for (int i = 0; i < d.vertices.length; i += 2) {
+                if (i + 1 < d.vertices.length) {
+                  minX = minX < d.vertices[i] ? minX : d.vertices[i];
+                  maxX = maxX > d.vertices[i] ? maxX : d.vertices[i];
+                  minY = minY < d.vertices[i + 1] ? minY : d.vertices[i + 1];
+                  maxY = maxY > d.vertices[i + 1] ? maxY : d.vertices[i + 1];
+                }
+              }
+
+              // 使用遮罩边界和 drawable 边界的并集，并添加足够的边距
+              final combinedBounds = Rect.fromLTRB(
+                (minX < bounds.left ? minX : bounds.left) - 50,
+                (minY < bounds.top ? minY : bounds.top) - 50,
+                (maxX > bounds.right ? maxX : bounds.right) + 50,
+                (maxY > bounds.bottom ? maxY : bounds.bottom) + 50,
+              );
+
+              canvas.saveLayer(combinedBounds, Paint());
+              canvas.clipPath(maskPath);
+              canvas.drawVertices(
+                vertices,
+                paintMultiply.blendMode,
+                paintMultiply,
+              );
+              if (screenA > 0) {
+                canvas.drawVertices(vertices, BlendMode.screen, paintScreen);
+              }
+              canvas.restore();
+            } else {
+              // 遮罩路径无效，直接绘制
+              canvas.drawVertices(
+                vertices,
+                paintMultiply.blendMode,
+                paintMultiply,
+              );
+              if (screenA > 0) {
+                canvas.drawVertices(vertices, BlendMode.screen, paintScreen);
+              }
+            }
+          } catch (e) {
+            // 遮罩路径错误，直接绘制（确保内容不被丢失）
+            canvas.drawVertices(
+              vertices,
+              paintMultiply.blendMode,
+              paintMultiply,
+            );
+            if (screenA > 0) {
+              canvas.drawVertices(vertices, BlendMode.screen, paintScreen);
+            }
+          }
+        }
       } catch (e) {
         // debugPrint('Error drawing drawable: $e');
       }

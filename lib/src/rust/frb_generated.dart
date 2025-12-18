@@ -497,17 +497,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   DrawableFrameDto dco_decode_drawable_frame_dto(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 8)
-      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return DrawableFrameDto(
-      textureIndex: dco_decode_u_32(arr[0]),
-      vertices: dco_decode_list_prim_f_32_strict(arr[1]),
-      uvs: dco_decode_list_prim_f_32_strict(arr[2]),
-      indices: dco_decode_list_prim_u_16_strict(arr[3]),
-      opacity: dco_decode_f_32(arr[4]),
-      multiplyColor: dco_decode_f_32_array_4(arr[5]),
-      screenColor: dco_decode_f_32_array_4(arr[6]),
-      drawOrder: dco_decode_i_32(arr[7]),
+      index: dco_decode_u_32(arr[0]),
+      textureIndex: dco_decode_u_32(arr[1]),
+      vertices: dco_decode_list_prim_f_32_strict(arr[2]),
+      uvs: dco_decode_list_prim_f_32_strict(arr[3]),
+      indices: dco_decode_list_prim_u_16_strict(arr[4]),
+      masks: dco_decode_list_prim_u_16_strict(arr[5]),
+      opacity: dco_decode_f_32(arr[6]),
+      multiplyColor: dco_decode_f_32_array_4(arr[7]),
+      screenColor: dco_decode_f_32_array_4(arr[8]),
+      drawOrder: dco_decode_i_32(arr[9]),
     );
   }
 
@@ -624,19 +626,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   DrawableFrameDto sse_decode_drawable_frame_dto(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_index = sse_decode_u_32(deserializer);
     var var_textureIndex = sse_decode_u_32(deserializer);
     var var_vertices = sse_decode_list_prim_f_32_strict(deserializer);
     var var_uvs = sse_decode_list_prim_f_32_strict(deserializer);
     var var_indices = sse_decode_list_prim_u_16_strict(deserializer);
+    var var_masks = sse_decode_list_prim_u_16_strict(deserializer);
     var var_opacity = sse_decode_f_32(deserializer);
     var var_multiplyColor = sse_decode_f_32_array_4(deserializer);
     var var_screenColor = sse_decode_f_32_array_4(deserializer);
     var var_drawOrder = sse_decode_i_32(deserializer);
     return DrawableFrameDto(
+      index: var_index,
       textureIndex: var_textureIndex,
       vertices: var_vertices,
       uvs: var_uvs,
       indices: var_indices,
+      masks: var_masks,
       opacity: var_opacity,
       multiplyColor: var_multiplyColor,
       screenColor: var_screenColor,
@@ -777,10 +783,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self.index, serializer);
     sse_encode_u_32(self.textureIndex, serializer);
     sse_encode_list_prim_f_32_strict(self.vertices, serializer);
     sse_encode_list_prim_f_32_strict(self.uvs, serializer);
     sse_encode_list_prim_u_16_strict(self.indices, serializer);
+    sse_encode_list_prim_u_16_strict(self.masks, serializer);
     sse_encode_f_32(self.opacity, serializer);
     sse_encode_f_32_array_4(self.multiplyColor, serializer);
     sse_encode_f_32_array_4(self.screenColor, serializer);

@@ -73,7 +73,6 @@ class Live2DModelManager extends ChangeNotifier {
     // 1. Find .model3.json files
     for (final key in assetKeys) {
       if (key.endsWith('.model3.json') && key.contains('assets/live2d/')) {
-        // Extract name from path (e.g. assets/live2d/mao_pro/runtime/mao_pro.model3.json -> mao_pro)
         final name = path
             .basenameWithoutExtension(key)
             .replaceAll('.model3', '');
@@ -608,6 +607,9 @@ class Live2DModelManager extends ChangeNotifier {
         debugPrint('⚠ Error unloading: $e');
       }
       _modelHandle = null;
+    }
+    for (final tex in _textures) {
+      tex.dispose();
     }
     _textures.clear();
     _currentFrame = null;

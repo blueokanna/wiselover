@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 class Live2DDrawableFrame {
   final int textureIndex;
   final List<double> vertices; // [x0, y0, x1, y1, ...]
-  final List<double> uvs; // [u0, v0, u1, v1, ...]
+  final List<double> uvs; // [u0, v0, u1, v1, ...] 归一化
   final List<int> indices;
   final double opacity;
   final Color multiplyColor;
@@ -65,6 +65,18 @@ class _Live2DPainter extends CustomPainter {
   final List<ui.Image> textures;
   final Live2DFrame? frame;
   final Color backgroundColor;
+  final Map<ui.Image, ui.ImageShader> _shaderCache = {};
+
+  // 复用 Paint，避免每帧大量分配
+  final Paint _paintMultiply = Paint()
+    ..isAntiAlias = true
+    ..filterQuality = FilterQuality.high
+    ..blendMode = BlendMode.srcOver;
+
+  final Paint _paintScreen = Paint()
+    ..isAntiAlias = true
+    ..filterQuality = FilterQuality.high
+    ..blendMode = BlendMode.screen;
 
   _Live2DPainter({
     required this.textures,
@@ -106,7 +118,6 @@ class _Live2DPainter extends CustomPainter {
 
     // 绘制所有 drawable
     for (final d in sorted) {
-      // 基本验证
       if (d.opacity <= 0.0) continue;
       if (d.vertices.length < 4 || d.indices.length < 3) continue;
       if (d.textureIndex < 0 || d.textureIndex >= textures.length) continue;
@@ -122,7 +133,8 @@ class _Live2DPainter extends CustomPainter {
 
       if (positions.isEmpty) continue;
 
-      // 准备纹理坐标（归一化坐标 0-1）
+      final texW = image.width.toDouble();
+      final texH = image.height.toDouble();
       final texCoords = <ui.Offset>[];
       final uvCount = d.uvs.length ~/ 2;
       final minCount = uvCount < positions.length ? uvCount : positions.length;
@@ -130,10 +142,9 @@ class _Live2DPainter extends CustomPainter {
       for (var i = 0; i < minCount * 2 && i + 1 < d.uvs.length; i += 2) {
         final u = d.uvs[i].clamp(0.0, 1.0);
         final v = d.uvs[i + 1].clamp(0.0, 1.0);
-        texCoords.add(Offset(u, v));
+        texCoords.add(Offset(u * texW, (1.0 - v) * texH));
       }
 
-      // 如果UV数量不足，用第一个UV或默认值填充
       while (texCoords.length < positions.length) {
         texCoords.add(
           texCoords.isNotEmpty ? texCoords.first : const Offset(0.0, 0.0),
@@ -164,36 +175,38 @@ class _Live2DPainter extends CustomPainter {
       );
       final indexList = Uint16List.fromList(validIndices);
 
-      // 创建 ImageShader
-      ui.ImageShader? shader;
-      try {
-        shader = ui.ImageShader(
-          image,
-          TileMode.clamp,
-          TileMode.clamp,
-          Float64List.fromList([
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-          ]),
-        );
-      } catch (e) {
-        continue;
+      // 创建/缓存 ImageShader
+      ui.ImageShader? shader = _shaderCache[image];
+      if (shader == null) {
+        try {
+          shader = ui.ImageShader(
+            image,
+            TileMode.clamp,
+            TileMode.clamp,
+            Float64List.fromList([
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+            ]),
+          );
+          _shaderCache[image] = shader;
+        } catch (e) {
+          continue;
+        }
       }
-
       // 创建顶点对象
       final vertices = ui.Vertices.raw(
         ui.VertexMode.triangles,
@@ -202,60 +215,68 @@ class _Live2DPainter extends CustomPainter {
         indices: indexList,
       );
 
-      // 处理 multiply color
-      final multiply = d.multiplyColor;
-      ColorFilter? colorFilter;
-      final r = multiply.red / 255.0;
-      final g = multiply.green / 255.0;
-      final b = multiply.blue / 255.0;
-      final a = multiply.alpha / 255.0;
-
-      if ((r - 1.0).abs() > 0.001 ||
-          (g - 1.0).abs() > 0.001 ||
-          (b - 1.0).abs() > 0.001 ||
-          (a - 1.0).abs() > 0.001) {
-        colorFilter = ColorFilter.matrix([
-          r,
-          0,
-          0,
-          0,
-          0,
-          0,
-          g,
-          0,
-          0,
-          0,
-          0,
-          0,
-          b,
-          0,
-          0,
-          0,
-          0,
-          0,
-          a,
-          0,
-        ]);
-      }
-
-      // 创建 Paint
+      // Live2D 标准混合：Multiply + Screen
       final opacity = d.opacity.clamp(0.0, 1.0);
       final alphaValue = (opacity * 255).round().clamp(1, 255);
 
-      final paint = Paint()
-        ..filterQuality = FilterQuality.high
+      // Multiply color: 检查值
+      final multiply = d.multiplyColor;
+      final mulR = multiply.red;
+      final mulG = multiply.green;
+      final mulB = multiply.blue;
+      // 检查 multiplyColor 是否接近黑色或白色
+      final isMultiplyBlack = mulR < 3 && mulG < 3 && mulB < 3;
+      final isMultiplyWhite = mulR > 252 && mulG > 252 && mulB > 252;
+
+      _paintMultiply
         ..shader = shader
-        ..color = Color.fromARGB(alphaValue, 255, 255, 255)
-        ..blendMode = BlendMode.srcOver
-        ..isAntiAlias = true;
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.high; // 提高过滤质量
 
-      if (colorFilter != null) {
-        paint.colorFilter = colorFilter;
+      if (isMultiplyBlack || isMultiplyWhite) {
+        // 跳过 multiply，直接使用 srcOver 绘制纹理
+        _paintMultiply
+          ..blendMode = BlendMode.srcOver
+          ..color = Color.fromARGB(alphaValue, 255, 255, 255);
+      } else {
+        // 使用 modulate 应用 multiplyColor
+        _paintMultiply
+          ..blendMode = BlendMode.modulate
+          ..color = Color.fromARGB(alphaValue, mulR, mulG, mulB);
       }
+      _paintMultiply.colorFilter = null;
 
-      // 绘制
+      // Screen pass
+      final screen = d.screenColor;
+      final screenA = screen.alpha;
+      final screenColor = Color.fromARGB(
+        (alphaValue * (screenA / 255)).round().clamp(0, 255),
+        screen.red,
+        screen.green,
+        screen.blue,
+      );
+      _paintScreen
+        ..shader = shader
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality
+            .high // 提高过滤质量
+        ..blendMode = BlendMode.screen
+        ..color = screenColor
+        ..colorFilter = null;
+
       try {
-        canvas.drawVertices(vertices, BlendMode.srcOver, paint);
+        canvas.drawVertices(vertices, _paintMultiply.blendMode, _paintMultiply);
+        if (screenA > 0) {
+          final screenLayerRect = Rect.fromLTWH(
+            -size.width * 2,
+            -size.height * 2,
+            size.width * 4,
+            size.height * 4,
+          );
+          canvas.saveLayer(screenLayerRect, Paint());
+          canvas.drawVertices(vertices, BlendMode.screen, _paintScreen);
+          canvas.restore();
+        }
       } catch (e) {
         // 忽略绘制错误
       }

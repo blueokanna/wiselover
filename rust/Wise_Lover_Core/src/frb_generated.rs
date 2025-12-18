@@ -482,19 +482,23 @@ impl SseDecode for bool {
 impl SseDecode for crate::api::live2d_model_api::DrawableFrameDto {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_index = <u32>::sse_decode(deserializer);
         let mut var_textureIndex = <u32>::sse_decode(deserializer);
         let mut var_vertices = <Vec<f32>>::sse_decode(deserializer);
         let mut var_uvs = <Vec<f32>>::sse_decode(deserializer);
         let mut var_indices = <Vec<u16>>::sse_decode(deserializer);
+        let mut var_masks = <Vec<u16>>::sse_decode(deserializer);
         let mut var_opacity = <f32>::sse_decode(deserializer);
         let mut var_multiplyColor = <[f32; 4]>::sse_decode(deserializer);
         let mut var_screenColor = <[f32; 4]>::sse_decode(deserializer);
         let mut var_drawOrder = <i32>::sse_decode(deserializer);
         return crate::api::live2d_model_api::DrawableFrameDto {
+            index: var_index,
             texture_index: var_textureIndex,
             vertices: var_vertices,
             uvs: var_uvs,
             indices: var_indices,
+            masks: var_masks,
             opacity: var_opacity,
             multiply_color: var_multiplyColor,
             screen_color: var_screenColor,
@@ -789,10 +793,12 @@ impl SseEncode for bool {
 impl SseEncode for crate::api::live2d_model_api::DrawableFrameDto {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u32>::sse_encode(self.index, serializer);
         <u32>::sse_encode(self.texture_index, serializer);
         <Vec<f32>>::sse_encode(self.vertices, serializer);
         <Vec<f32>>::sse_encode(self.uvs, serializer);
         <Vec<u16>>::sse_encode(self.indices, serializer);
+        <Vec<u16>>::sse_encode(self.masks, serializer);
         <f32>::sse_encode(self.opacity, serializer);
         <[f32; 4]>::sse_encode(self.multiply_color, serializer);
         <[f32; 4]>::sse_encode(self.screen_color, serializer);

@@ -50,6 +50,8 @@ List<String> live2DModelGetPartIds({required BigInt handle}) => RustLib
 
 /// Dart 侧使用的单个 Drawable 帧数据
 class DrawableFrameDto {
+  /// 原始 drawable 索引（用于遮罩查找）
+  final int index;
   final int textureIndex;
 
   /// 展平后的顶点坐标数组：[x0, y0, x1, y1, ...]
@@ -60,6 +62,9 @@ class DrawableFrameDto {
 
   /// 索引缓冲，指向 `vertices` / `uvs` 中的顶点下标
   final Uint16List indices;
+
+  /// 遮罩列表，元素为 drawable 索引
+  final Uint16List masks;
   final double opacity;
 
   /// 乘色
@@ -72,10 +77,12 @@ class DrawableFrameDto {
   final int drawOrder;
 
   const DrawableFrameDto({
+    required this.index,
     required this.textureIndex,
     required this.vertices,
     required this.uvs,
     required this.indices,
+    required this.masks,
     required this.opacity,
     required this.multiplyColor,
     required this.screenColor,
@@ -84,10 +91,12 @@ class DrawableFrameDto {
 
   @override
   int get hashCode =>
+      index.hashCode ^
       textureIndex.hashCode ^
       vertices.hashCode ^
       uvs.hashCode ^
       indices.hashCode ^
+      masks.hashCode ^
       opacity.hashCode ^
       multiplyColor.hashCode ^
       screenColor.hashCode ^
@@ -98,10 +107,12 @@ class DrawableFrameDto {
       identical(this, other) ||
       other is DrawableFrameDto &&
           runtimeType == other.runtimeType &&
+          index == other.index &&
           textureIndex == other.textureIndex &&
           vertices == other.vertices &&
           uvs == other.uvs &&
           indices == other.indices &&
+          masks == other.masks &&
           opacity == other.opacity &&
           multiplyColor == other.multiplyColor &&
           screenColor == other.screenColor &&
