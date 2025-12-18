@@ -1,1 +1,0 @@
-{"version":2,"entries":[{"package":"build_tool","rootUri":"../rust_builder/cargokit/build_tool/","packageUri":"lib/"},{"package":"rust_lib_wiselover","rootUri":"../rust_builder/","packageUri":"lib/"},{"package":"wiselover","rootUri":"../","packageUri":"lib/"}]}
